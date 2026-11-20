@@ -1,0 +1,1 @@
+# luvandair-kalkulaator
