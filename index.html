@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="et">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Arvuta kunstiteose hinnanguline tööaeg ja koguhind.">
+  <title>Luvandair – kunstiteoste hinnakalkulaator</title>
+  <style>
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      background: #fbf9f5;
+      color: #2c2736;
+      font: 1rem/1.55 system-ui, sans-serif;
+    }
+
+    main {
+      width: min(70rem, 100% - 2rem);
+      margin: 3rem auto;
+    }
+
+    header {
+      padding: clamp(1.5rem, 5vw, 4rem);
+      border-radius: 1.5rem;
+      background: linear-gradient(115deg, #eee5ff, #fce9e2 70%, #fff4d7);
+      margin-bottom: 1.5rem;
+    }
+
+    .brand {
+      font-weight: 750;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1, h2 {
+      font-family: Georgia, serif;
+      line-height: 1.12;
+      font-weight: 500;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 6vw, 4rem);
+      margin: .55rem 0;
+      overflow-wrap: anywhere;
+    }
+
+    h2 { font-size: 1.75rem; margin: 0 0 .85rem; }
+    p { margin: .6rem 0; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 1.25rem;
+    }
+
+    form { display: grid; gap: 1rem; }
+
+    .card {
+      min-width: 0;
+      padding: clamp(1rem, 3vw, 1.65rem);
+      background: #fff;
+      border: 1px solid #e5dfee;
+      border-radius: 1.2rem;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+      gap: .85rem;
+    }
+
+    label { display: block; font-size: .92rem; font-weight: 680; }
+
+    input, select {
+      width: 100%;
+      margin-top: .35rem;
+      padding: .65rem;
+      border: 1px solid #a99bb8;
+      border-radius: .55rem;
+      background: #fbf9fd;
+      color: inherit;
+      font: inherit;
+    }
+
+    input[type="file"] { font-size: .85rem; }
+    :focus-visible { outline: 3px solid #7044a4; outline-offset: 3px; }
+    small { display: block; color: #594d66; margin-top: .5rem; }
+    small:empty { display: none; }
+
+    .preview {
+      width: 100%;
+      height: 10rem;
+      object-fit: contain;
+      background: #f7f3fa;
+      border-radius: .65rem;
+      margin-top: .65rem;
+    }
+
+    button {
+      margin-top: .5rem;
+      background: #fff;
+      border: 1px solid #a99bb8;
+      border-radius: .5rem;
+      padding: .4rem .65rem;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    aside.card { background: #f0e8fb; }
+
+    .total {
+      font: 500 clamp(2.3rem, 5vw, 3.7rem)/1.1 Georgia, serif;
+      color: #492478;
+      overflow-wrap: anywhere;
+      margin: .8rem 0;
+    }
+
+    dl { margin: 1rem 0; border-block: 1px solid #d4c4e4; padding: .65rem 0; }
+    dl div { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; }
+    dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+    summary { cursor: pointer; font-weight: 650; }
+
+    @media (max-width: 48rem) {
+      .layout { grid-template-columns: 1fr; }
+      main { margin-block: 1rem; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="brand">Luvandair</span>
+    <h1>Kunstiteoste hinnakalkulaator</h1>
+    <p>Vali teose omadused ja sisesta kulud, et näha tööaja ja hinna hinnangut.</p>
+  </header>
+
+  <div class="layout">
+    <form id="calculator">
+      <section class="card" aria-labelledby="art-title">
+        <h2 id="art-title">Kunstiteos</h2>
+        <div class="fields">
+          <label>Teose tüüp
+            <select id="kind">
+              <option value="wall">Seinamaaling</option>
+              <option value="canvas" selected>Lõuendimaal</option>
+              <option value="paper">Joonistus paberile</option>
+            </select>
+          </label>
+          <label>Tehnika
+            <select id="medium">
+              <option value="pencil">Harilik pliiats</option>
+              <option value="colored">Värvipliiats</option>
+              <option value="acrylic" selected>Akrüülvärv</option>
+              <option value="watercolor">Akvarell</option>
+              <option value="oil">Õlivärv</option>
+            </select>
+          </label>
+          <label>Laius (cm)
+            <input id="width" type="number" min="0.01" step="0.01" value="60" required>
+          </label>
+          <label>Kõrgus (cm)
+            <input id="height" type="number" min="0.01" step="0.01" value="40" required>
+          </label>
+          <label>Keerukus
+            <select id="complexity">
+              <option value="simple">Lihtne</option>
+              <option value="medium" selected>Keskmine</option>
+              <option value="detailed">Detailne</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="cost-title">
+        <h2 id="cost-title">Kulud</h2>
+        <div class="fields">
+          <label>Materjalikulu (€)
+            <input id="materials" type="number" min="0" step="0.01" value="25" required>
+          </label>
+          <label>Tunnihind (€/h)
+            <input id="rate" type="number" min="0" step="0.01" value="35" required>
+          </label>
+          <label>Transpordikulu (€)
+            <input id="transport" type="number" min="0" step="0.01" value="0" required>
+          </label>
+        </div>
+        <small>Asenda näidissummad enda hindadega. Kui kulu puudub, sisesta 0.</small>
+      </section>
+
+      <section class="card" aria-labelledby="photo-title">
+        <h2 id="photo-title">Pildid</h2>
+        <div class="fields">
+          <div class="attachment">
+            <label>Inspiratsioonipilt
+              <input type="file" accept="image/*">
+            </label>
+            <img class="preview" alt="Inspiratsioonipildi eelvaade" hidden>
+            <button type="button" hidden>Eemalda inspiratsioonipilt</button>
+            <small role="status"></small>
+          </div>
+          <div class="attachment">
+            <label>Seina või toa foto
+              <input type="file" accept="image/*">
+            </label>
+            <img class="preview" alt="Seina või toa foto eelvaade" hidden>
+            <button type="button" hidden>Eemalda seina või toa foto</button>
+            <small role="status"></small>
+          </div>
+        </div>
+        <small>Pildid on valikulised. Lehe värskendamisel tuleb need uuesti valida.</small>
+      </section>
+    </form>
+
+    <aside class="card" aria-labelledby="estimate-title">
+      <h2 id="estimate-title">Hinnanguline koguhind</h2>
+      <div aria-live="polite" aria-atomic="true">
+        <p class="total" id="total">—</p>
+        <p id="feedback" hidden></p>
+        <dl>
+          <div><dt>Tööaeg</dt><dd id="hours">—</dd></div>
+          <div><dt>Töötasu</dt><dd id="labor">—</dd></div>
+          <div><dt>Materjalid</dt><dd id="material-total">—</dd></div>
+          <div><dt>Transport</dt><dd id="transport-total">—</dd></div>
+        </dl>
+      </div>
+      <details>
+        <summary>Kuidas hinnang arvutatakse?</summary>
+        <p>Teose tüübi järgi liidetakse ettevalmistusaeg ja pindalast sõltuv tööaeg.
+          Seejärel arvestatakse tehnika ja keerukuse näidiskordajaid ning ümardatakse
+          tööaeg üles lähima poole tunnini.</p>
+        <p>Koguhind = tööaeg × tunnihind + materjalikulu + transpordikulu.</p>
+      </details>
+      <noscript><p>Arvutamiseks luba brauseris JavaScript.</p></noscript>
+    </aside>
+  </div>
+</main>
+
+<script>
+  const byId = id => document.getElementById(id);
+  const form = byId('calculator');
+
+  // Siin saab muuta tööaja näidisseadeid.
+  const typeTimes = {
+    wall: { preparation: 3, perSquareMeter: 5 },
+    canvas: { preparation: 1.5, perSquareMeter: 16 },
+    paper: { preparation: 0.75, perSquareMeter: 24 }
+  };
+  const techniqueFactors = {
+    pencil: 1, colored: 1.25, acrylic: 1, watercolor: 1.15, oil: 1.4
+  };
+  const complexityFactors = { simple: 0.75, medium: 1, detailed: 1.6 };
+
+  const euros = new Intl.NumberFormat('et-EE', {
+    style: 'currency',
+    currency: 'EUR'
+  });
+  const decimals = new Intl.NumberFormat('et-EE', {
+    maximumFractionDigits: 1
+  });
+  const numericFields = ['width', 'height', 'materials', 'rate', 'transport'].map(byId);
+  const resultFields = ['total', 'hours', 'labor', 'material-total', 'transport-total'].map(byId);
+
+  function showError(message) {
+    byId('feedback').textContent = message;
+    byId('feedback').hidden = false;
+    resultFields.forEach(field => { field.textContent = '—'; });
+  }
+
+  function updateEstimate() {
+    if (!numericFields.every(field => field.validity.valid)) {
+      showError('Sisesta positiivsed mõõdud ning nullist algavad hinnad ja kulud. Kasuta kuni kaht komakohta.');
+      return;
+    }
+
+    const [width, height, materials, rate, transport] =
+      numericFields.map(field => field.valueAsNumber);
+    const area = width * height / 10000;
+    const { preparation, perSquareMeter } = typeTimes[byId('kind').value];
+    const technique = techniqueFactors[byId('medium').value];
+    const complexity = complexityFactors[byId('complexity').value];
+    const rawHours = (preparation + area * perSquareMeter) * technique * complexity;
+    const hours = Math.ceil(rawHours * 2 - 1e-9) / 2;
+
+    const laborCents = Math.round(hours * Math.round(rate * 100));
+    const totalCents = laborCents + Math.round(materials * 100) + Math.round(transport * 100);
+    if (!Number.isFinite(hours) || !Number.isSafeInteger(totalCents)) {
+      showError('Sisestatud väärtused on arvutamiseks liiga suured.');
+      return;
+    }
+
+    byId('feedback').hidden = true;
+    byId('hours').textContent = decimals.format(hours) + ' h';
+    byId('labor').textContent = euros.format(laborCents / 100);
+    byId('material-total').textContent = euros.format(materials);
+    byId('transport-total').textContent = euros.format(transport);
+    byId('total').textContent = euros.format(totalCents / 100);
+  }
+
+  form.addEventListener('input', event => {
+    if (event.target.type !== 'file') updateEstimate();
+  });
+  form.addEventListener('submit', event => event.preventDefault());
+
+  document.querySelectorAll('.attachment').forEach(attachment => {
+    const input = attachment.querySelector('input');
+    const preview = attachment.querySelector('img');
+    const remove = attachment.querySelector('button');
+    const status = attachment.querySelector('[role="status"]');
+    let url;
+
+    function clearPreview() {
+      if (url) URL.revokeObjectURL(url);
+      url = undefined;
+      preview.hidden = true;
+      preview.removeAttribute('src');
+      remove.hidden = true;
+      status.textContent = '';
+    }
+
+    input.addEventListener('change', () => {
+      clearPreview();
+      const file = input.files[0];
+      if (!file) return;
+      url = URL.createObjectURL(file);
+      preview.src = url;
+      remove.hidden = false;
+    });
+
+    preview.addEventListener('load', () => {
+      if (url) preview.hidden = false;
+    });
+
+    preview.addEventListener('error', () => {
+      if (!url) return;
+      clearPreview();
+      input.value = '';
+      status.textContent = 'Pilti ei saanud avada. Proovi JPG-, PNG- või WebP-faili.';
+    });
+
+    remove.addEventListener('click', () => {
+      clearPreview();
+      input.value = '';
+      input.focus();
+    });
+  });
+
+  updateEstimate();
+</script>
+</body>
+</html>
